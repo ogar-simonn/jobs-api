@@ -57,7 +57,7 @@ const deleteJob = async (req, res) => {
     throw new NotFoundError("No job found");
   }
   const { _id } = selectedJob;
-  const deletedJob = await Job.deleteOne({ _id });
+  await Job.deleteOne({ _id });
 
   res.status(StatusCodes.OK).send();
 };
