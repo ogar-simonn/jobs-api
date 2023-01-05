@@ -1,17 +1,65 @@
+const Job = require("../models/Job");
+const { StatusCodes } = require("http-status-codes");
+const { BadRequestError, NotFoundError } = require("../errors");
+
 const getAllJobs = async (req, res) => {
-  res.send("All Jobs");
+  const jobs = await Job.find({ createdBy: req.user.userId }).sort("createdAt");
+  res.status(StatusCodes.CREATED).json({ jobs, count: jobs.length });
 };
 const getJob = async (req, res) => {
-  res.send("single Job");
+  const {
+    user: { userId },
+    params: { id: jobId },
+  } = req;
+  const job = await Job.findOne({
+    _id: jobId,
+    createdBy: userId,
+  });
+  if (!job) {
+    throw new NotFoundError("No job found");
+  }
+  res.status(StatusCodes.OK).json({ job });
 };
 const createJob = async (req, res) => {
-  res.send("create Jobs");
+  req.body.createdBy = req.user.userId;
+  const job = await Job.create(req.body);
+  res.status(StatusCodes.CREATED).json(job);
 };
 const updateJob = async (req, res) => {
-  res.send("Update Jobs");
+  const {
+    body: { company, position },
+    user: { userId },
+    params: { id: jobId },
+  } = req;
+
+  if (company === "" || position === "") {
+    return new BadRequestError("Please provide proper values");
+  }
+
+  const job = await Job.findOneAndUpdate(
+    { _id: jobId, createdBy: userId },
+    req.body,
+    { new: true, runValidators: true }
+  );
+
+  res.status(StatusCodes.OK).json({ job });
 };
 const deleteJob = async (req, res) => {
-  res.send("Delete Job");
+  const {
+    user: { userId },
+    params: { id: jobId },
+  } = req;
+  const selectedJob = await Job.findOne({
+    _id: jobId,
+    createdBy: userId,
+  });
+  if (!selectedJob) {
+    throw new NotFoundError("No job found");
+  }
+  const { _id } = selectedJob;
+  const deletedJob = await Job.deleteOne({ _id });
+
+  res.status(StatusCodes.OK).send();
 };
 module.exports = {
   getAllJobs,
